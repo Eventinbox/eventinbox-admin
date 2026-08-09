@@ -1,0 +1,27 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        # Inlined into the client bundle at build time and kept in the runtime env.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.eventinbox.pro}
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.eventinbox.pro}
+      # Optional comma-separated server-side IP allow-list (see middleware.ts).
+      ADMIN_IP_WHITELIST: ${ADMIN_IP_WHITELIST:-}
+      NODE_ENV: production
+    # No host port mapping — a reverse proxy fronts the container on the
+    # shared network and reaches it as web:3000.
+    expose:
+      - "3000"
+    restart: unless-stopped
+    healthcheck:
+      # node:20-alpine ships busybox wget (no GNU long flags like --spider).
+      # Probe the dedicated /api/health route, which returns 200 with no auth
+      # or redirect. Use 127.0.0.1 (not localhost): alpine may resolve localhost
+      # to ::1, but Next listens on IPv4 (HOSTNAME=0.0.0.0).
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

@@ -1,0 +1,50 @@
+/* Honor the user's reduced-motion preference: neutralize all animation and
+   transition globally. Lives here (not in Chakra globalCss) because a universal
+   selector inside an @media block isn't expressible in the typed config. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keyboard focus is first-class for this audience: a consistent cyan ring on
+   every interactive element when navigating by keyboard (not on mouse click).
+   `:where()` keeps specificity at 0 so component styles can still override. */
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid rgba(0, 229, 255, 0.75);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Dense, engineer-friendly tables: tight rows, hairline separators in the
+   `line` color, no zebra. Numeric columns opt in with `.ei-num`. */
+.ei-table {
+  /* Tabular figures everywhere so every column of numbers aligns. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum", "zero";
+  line-height: 1.25;
+}
+.ei-table :is(td, th) {
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+  border-color: #202327 !important;
+  line-height: 1.3;
+}
+.ei-table th {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  color: #878d96;
+}
+.ei-table .ei-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
