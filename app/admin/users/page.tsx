@@ -54,14 +54,12 @@ export default function AdminUsersPage() {
   const hasPrev = page > 0;
   const hasNext = offset + PAGE_SIZE < total;
 
-  function patchUser(email: string, patch: Partial<AdminUser>) {
+  function patchUser(id: string, patch: Partial<AdminUser>) {
     setData((prev) =>
       prev
         ? {
             ...prev,
-            users: prev.users.map((u) =>
-              u.email === email ? { ...u, ...patch } : u,
-            ),
+            users: prev.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
           }
         : prev,
     );
@@ -78,36 +76,39 @@ export default function AdminUsersPage() {
 
   async function runAction(action: PendingAction) {
     const { kind, user } = action;
-    setBusy((s) => new Set(s).add(user.email));
+    setBusy((s) => new Set(s).add(user.id));
     try {
       if (kind === "admin") {
         const next = action.nextAdmin ?? !user.is_admin;
-        await adminApi.setAdmin(user.email, next);
-        patchUser(user.email, { is_admin: next });
+        const res = await adminApi.setAdmin(user.id, next);
+        // Trust the flag the API persisted over the one we optimistically sent,
+        // so the switch can't drift from the server if the write was coerced.
+        const applied = res?.is_admin ?? next;
+        patchUser(user.id, { is_admin: applied });
         toaster.create({
           type: "success",
-          title: next ? "Admin granted" : "Admin revoked",
+          title: applied ? "Admin granted" : "Admin revoked",
           description: user.email,
         });
       } else if (kind === "suspend") {
-        await adminApi.suspendUser(user.email);
+        await adminApi.suspendUser(user.id);
         // Stamp a suspended_at so the row reflects it immediately.
-        patchUser(user.email, { suspended_at: new Date().toISOString() });
+        patchUser(user.id, { suspended_at: new Date().toISOString() });
         toaster.create({
           type: "success",
           title: "User suspended",
           description: user.email,
         });
       } else if (kind === "unsuspend") {
-        await adminApi.unsuspendUser(user.email);
-        patchUser(user.email, { suspended_at: null });
+        await adminApi.unsuspendUser(user.id);
+        patchUser(user.id, { suspended_at: null });
         toaster.create({
           type: "success",
           title: "Suspension lifted",
           description: user.email,
         });
       } else if (kind === "delete") {
-        await adminApi.deleteUser(user.email);
+        await adminApi.deleteUser(user.id);
         toaster.create({
           type: "success",
           title: "User deleted",
@@ -128,7 +129,7 @@ export default function AdminUsersPage() {
     } finally {
       setBusy((s) => {
         const next = new Set(s);
-        next.delete(user.email);
+        next.delete(user.id);
         return next;
       });
     }
