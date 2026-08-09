@@ -19,7 +19,7 @@ export interface RowHandlers {
   onSuspend: (user: AdminUser) => void;
   onUnsuspend: (user: AdminUser) => void;
   onDelete: (user: AdminUser) => void;
-  // emails with an action currently in flight — their row controls disable
+  // user ids with an action currently in flight — their row controls disable
   busy: Set<string>;
 }
 
@@ -52,10 +52,10 @@ export function UsersTable({
           {users.map((u) => {
             const verified = u.email_verified_at != null;
             const suspended = u.suspended_at != null;
-            const busy = handlers.busy.has(u.email);
+            const busy = handlers.busy.has(u.id);
             return (
               <Table.Row
-                key={u.email}
+                key={u.id}
                 bg="transparent"
                 _hover={{ bg: "panelHover" }}
                 opacity={suspended ? 0.6 : 1}
@@ -111,10 +111,19 @@ export function UsersTable({
                     disabled={busy}
                     onCheckedChange={(e) => handlers.onToggleAdmin(u, e.checked)}
                   >
-                    <Switch.HiddenInput />
+                    <Switch.HiddenInput
+                      aria-label={`Admin access for ${u.email}`}
+                    />
                     <Switch.Control>
                       <Switch.Thumb />
                     </Switch.Control>
+                    <Switch.Label
+                      fontFamily="mono"
+                      fontSize="xs"
+                      color={u.is_admin ? "green.400" : "muted"}
+                    >
+                      {u.is_admin ? "on" : "off"}
+                    </Switch.Label>
                   </Switch.Root>
                 </Table.Cell>
                 <Table.Cell>
