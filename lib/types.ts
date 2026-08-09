@@ -144,9 +144,11 @@ export interface AdminStats {
   };
 }
 
-// Mirrors handlers.adminUserRow (GET /api/v1/admin/users). No id is returned;
-// email is the stable key. email_verified_at is null until the user verifies.
+// Mirrors handlers.adminUserRow (GET /api/v1/admin/users). `id` is the user's
+// UUID and the stable key admin mutations are addressed by; email is display
+// only. email_verified_at is null until the user verifies.
 export interface AdminUser {
+  id: string;
   email: string;
   full_name: string;
   created_at: string;

@@ -14,7 +14,7 @@
 // modelled on the conventional REST shape the server is expected to expose; each
 // call surfaces a precise ApiError (e.g. 404 "not implemented") if a route isn't
 // live yet, so the UI degrades to a clear toast instead of failing silently.
-// Users are keyed by email — the admin users payload returns no id.
+// Users are addressed by their UUID (`AdminUser.id`), not by email.
 
 import { api, ApiError, request } from "./api";
 import type { AdminFeedRow, AdminStats, AdminUsersResponse } from "./types";
@@ -22,8 +22,8 @@ import type { AdminFeedRow, AdminStats, AdminUsersResponse } from "./types";
 export { ApiError };
 export { API_BASE_URL } from "./api";
 
-function userPath(email: string, suffix = ""): string {
-  return `/api/v1/admin/users/${encodeURIComponent(email)}${suffix}`;
+function userPath(id: string, suffix = ""): string {
+  return `/api/v1/admin/users/${encodeURIComponent(id)}${suffix}`;
 }
 
 export const adminApi = {
@@ -41,31 +41,32 @@ export const adminApi = {
   ): Promise<AdminFeedRow[]> => api.adminFeed(query, signal),
 
   // ---- Mutations -----------------------------------------------------------
-  // Flip an account's admin flag.
-  setAdmin: (email: string, isAdmin: boolean) =>
-    request<{ email: string; is_admin: boolean }>(userPath(email, "/admin"), {
+  // Flip an account's admin flag. Returns the persisted flag, which the caller
+  // should prefer over the value it optimistically sent.
+  setAdmin: (id: string, isAdmin: boolean) =>
+    request<{ id: string; is_admin: boolean }>(userPath(id, "/admin"), {
       method: "POST",
       body: { is_admin: isAdmin },
       redirectOn401: false,
     }),
 
   // Suspend an account (blocks sign-in / API access without deleting data).
-  suspendUser: (email: string) =>
-    request<{ email: string; status: string }>(userPath(email, "/suspend"), {
+  suspendUser: (id: string) =>
+    request<{ id: string; status: string }>(userPath(id, "/suspend"), {
       method: "POST",
       redirectOn401: false,
     }),
 
   // Lift a suspension.
-  unsuspendUser: (email: string) =>
-    request<{ email: string; status: string }>(userPath(email, "/unsuspend"), {
+  unsuspendUser: (id: string) =>
+    request<{ id: string; status: string }>(userPath(id, "/unsuspend"), {
       method: "POST",
       redirectOn401: false,
     }),
 
   // Permanently delete an account and its workspaces. Irreversible.
-  deleteUser: (email: string) =>
-    request<{ status: string }>(userPath(email), {
+  deleteUser: (id: string) =>
+    request<{ status: string }>(userPath(id), {
       method: "DELETE",
       redirectOn401: false,
     }),
